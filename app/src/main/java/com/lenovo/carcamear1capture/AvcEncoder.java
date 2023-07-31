@@ -26,8 +26,7 @@ public class AvcEncoder implements SocketLive.SocketCallback
 	int m_width;
 	int m_height;
 	int m_framerate;
-	byte[] m_info = null;
-	 
+
 	public byte[] configbyte; 
 
 
@@ -39,7 +38,7 @@ public class AvcEncoder implements SocketLive.SocketCallback
 		m_framerate = framerate;
 	
 	    MediaFormat mediaFormat = MediaFormat.createVideoFormat("video/avc", width, height);
-	    mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar);    
+	    mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
 	    mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 25000);
 	    mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 15);
 	    mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2);
@@ -51,11 +50,10 @@ public class AvcEncoder implements SocketLive.SocketCallback
 		}
 	    mediaCodec.configure(mediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
 	    mediaCodec.start();
-	    createfile();
+//	    createfile();
 
 		socketLive=new SocketLive(this);
 		socketLive.start();
-		Log.i("TAG","start to connect server");
 	}
 	
 	private static String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/test1.h264";
@@ -116,9 +114,9 @@ public class AvcEncoder implements SocketLive.SocketCallback
 				while (isRuning) {
 					if (MainActivity.YUVQueue.size() >0){
 						input = MainActivity.YUVQueue.poll();
-						byte[] yuv420sp = new byte[m_width*m_height*3/2];
-						NV21ToNV12(input,yuv420sp,m_width,m_height);
-						input = yuv420sp;
+//						byte[] yuv420sp = new byte[m_width*m_height*3/2];
+//						NV21ToNV12(input,yuv420sp,m_width,m_height);
+//						input = nv21;
 					}
 					if (input != null) {
 						try {

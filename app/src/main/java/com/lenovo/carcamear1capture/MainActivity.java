@@ -6,6 +6,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.hardware.Camera;
 import android.hardware.Camera.Parameters;
@@ -14,12 +16,15 @@ import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.widget.ImageView;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.concurrent.ArrayBlockingQueue;
 
@@ -50,12 +55,14 @@ public class MainActivity extends Activity  implements SurfaceHolder.Callback,Pr
     private static String[] PERMISSIONS_STORAGE = {
             "android.permission.CAMERA",
             "android.permission.WRITE_EXTERNAL_STORAGE" };
-	
-	@Override
+    private ImageView imagev;
+
+    @Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
         surfaceview = findViewById(R.id.surfaceview);
+        imagev = findViewById(R.id.image);
         SupportAvcCodec();
         if (Build.VERSION.SDK_INT>22) {
             if (!checkPermissionAllGranted(PERMISSIONS_STORAGE)){
@@ -73,7 +80,6 @@ public class MainActivity extends Activity  implements SurfaceHolder.Callback,Pr
 	private void init(){
         surfaceHolder = surfaceview.getHolder();
         surfaceHolder.addCallback(this);
-
     }
 
     private boolean checkPermissionAllGranted(String[] permissions) {
@@ -126,6 +132,7 @@ public class MainActivity extends Activity  implements SurfaceHolder.Callback,Pr
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
         camera = getBackCamera();
         startcamera(camera);
+        Log.e("TAG","preview width is ------------"+width+"height-----"+height);
         avcCodec = new AvcEncoder(this.width,this.height,framerate,biterate);
         avcCodec.StartEncoderThread();
     }
@@ -145,10 +152,11 @@ public class MainActivity extends Activity  implements SurfaceHolder.Callback,Pr
 	@Override
 	public void onPreviewFrame(byte[] data, Camera camera) {
 		// TODO Auto-generated method stub
-		putYUVData(data,data.length);
+		putYUVData(data);
 	}
 	
-	public void putYUVData(byte[] buffer, int length) {
+	public void putYUVData(byte[] buffer) {
+        ImageUtil.ConvertNV21ToBitmap(buffer,imagev);
 		if (YUVQueue.size() >= 10) {
 			YUVQueue.poll();
 		}

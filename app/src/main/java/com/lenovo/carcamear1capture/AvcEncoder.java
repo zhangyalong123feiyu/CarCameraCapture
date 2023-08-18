@@ -38,7 +38,7 @@ public class AvcEncoder implements SocketLive.SocketCallback
 		m_framerate = framerate;
 	
 	    MediaFormat mediaFormat = MediaFormat.createVideoFormat("video/avc", width, height);
-	    mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
+	    mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible); //MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar
 	    mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 25000);
 	    mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 15);
 	    mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2);
@@ -51,7 +51,7 @@ public class AvcEncoder implements SocketLive.SocketCallback
 	    mediaCodec.configure(mediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
 	    mediaCodec.start();
 //	    createfile();
-
+		Log.e("TAG","begin to create socketLive");
 		socketLive=new SocketLive(this);
 		socketLive.start();
 	}
@@ -101,6 +101,8 @@ public class AvcEncoder implements SocketLive.SocketCallback
 	int count = 0;
 
 	public void StartEncoderThread(){
+
+		Log.e("TAG","start encoder");
 		Thread EncoderThread = new Thread(new Runnable() {
 
 			@SuppressLint("NewApi")
@@ -112,8 +114,8 @@ public class AvcEncoder implements SocketLive.SocketCallback
 				long generateIndex = 0;
 
 				while (isRuning) {
-					if (MainActivity.YUVQueue.size() >0){
-						input = MainActivity.YUVQueue.poll();
+					if (CameraWindow.YUVQueue.size() >0){
+						input = CameraWindow.YUVQueue.poll();
 //						byte[] yuv420sp = new byte[m_width*m_height*3/2];
 //						NV21ToNV12(input,yuv420sp,m_width,m_height);
 //						input = nv21;
@@ -165,6 +167,7 @@ public class AvcEncoder implements SocketLive.SocketCallback
 					} else {
 						try {
 							Thread.sleep(500);
+							Log.e("TAG","input data is null");
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 						}

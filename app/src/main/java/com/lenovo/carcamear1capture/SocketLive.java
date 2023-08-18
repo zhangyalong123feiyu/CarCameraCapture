@@ -29,6 +29,7 @@ public class SocketLive {
 
     public void start() {
         webSocketServer.start();
+        Log.e("TAG","start server");
     }
 
     public void sendData(byte[] bytes) {
@@ -37,11 +38,11 @@ public class SocketLive {
         }
     }
 
-    private WebSocketServer webSocketServer = new WebSocketServer(new InetSocketAddress(12003)) {
+    private WebSocketServer webSocketServer = new WebSocketServer(new InetSocketAddress(12005)) {
         @Override
         public void onOpen(WebSocket webSocket, ClientHandshake clientHandshake) {
             SocketLive.this.webSocket = webSocket;
-            Log.i("TAG", "onOpen: 服务端 打开 socket ");
+            Log.e("TAG", "onOpen: 服务端 打开 socket ");
         }
 
         @Override

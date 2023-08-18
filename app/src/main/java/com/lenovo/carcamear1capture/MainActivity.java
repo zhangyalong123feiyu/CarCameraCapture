@@ -5,30 +5,33 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.hardware.Camera;
 import android.hardware.Camera.Parameters;
-import android.hardware.Camera.PreviewCallback;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
 import android.widget.ImageView;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import java.io.ByteArrayOutputStream;
+import com.dk.floatingview.FloatWindow;
+
 import java.io.IOException;
 import java.util.concurrent.ArrayBlockingQueue;
 
-public class MainActivity extends Activity  implements SurfaceHolder.Callback,PreviewCallback {
+public class MainActivity extends Activity  implements SurfaceHolder.Callback, Camera.PreviewCallback {
 
 	private SurfaceView surfaceview;
 	
@@ -62,21 +65,45 @@ public class MainActivity extends Activity  implements SurfaceHolder.Callback,Pr
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
         surfaceview = findViewById(R.id.surfaceview);
-        imagev = findViewById(R.id.image);
-        SupportAvcCodec();
-        if (Build.VERSION.SDK_INT>22) {
-            if (!checkPermissionAllGranted(PERMISSIONS_STORAGE)){
-                ActivityCompat.requestPermissions(MainActivity.this,
-                        PERMISSIONS_STORAGE, CAMERA_OK);
-            }else{
-                init();
-            }
-        }else{
-            init();
+//        View sufaceLayout = LayoutInflater.from(this).inflate(R.layout.float_layout, null);
+//        surfaceview=sufaceLayout.findViewById(R.id.floatSurface);
+//        imagev = findViewById(R.id.image);
+//        FloatWindow.with(getApplication())//application上下文
+//                .setLayoutId(R.layout.float_layout)//悬浮布局
+//                //.setFilter(Test1_1Activity.class)//过滤activity
+//                //.setLayoutParam()//设置悬浮布局layoutParam
+//                .build();
+        requestAlertWindowPermission();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CameraWindow cameraWindow=new CameraWindow();
+            cameraWindow.show(this);
         }
+        SupportAvcCodec();
+//        if (Build.VERSION.SDK_INT>22) {
+//            if (!checkPermissionAllGranted(PERMISSIONS_STORAGE)){
+//                ActivityCompat.requestPermissions(MainActivity.this,
+//                        PERMISSIONS_STORAGE, CAMERA_OK);
+//            }else{
+//                init();
+//            }
+//        }else{
+//            init();
+//        }
 
+//        startService(new Intent(this, CameraService_.class));
+    moveTaskToBack(true);
 	}
-
+    private void requestAlertWindowPermission() {
+        try {
+            if (!Settings.canDrawOverlays(this)){
+                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+                intent.setData(Uri.parse("package:" + getPackageName()));
+                startActivityForResult(intent, 1001);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 	private void init(){
         surfaceHolder = surfaceview.getHolder();
         surfaceHolder.addCallback(this);
@@ -125,7 +152,7 @@ public class MainActivity extends Activity  implements SurfaceHolder.Callback,Pr
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
 
-		
+
     }
 
     @Override
@@ -154,21 +181,21 @@ public class MainActivity extends Activity  implements SurfaceHolder.Callback,Pr
 		// TODO Auto-generated method stub
 		putYUVData(data);
 	}
-	
+
 	public void putYUVData(byte[] buffer) {
-        ImageUtil.ConvertNV21ToBitmap(buffer,imagev);
+//        ImageUtil.ConvertNV21ToBitmap(buffer,imagev);
 		if (YUVQueue.size() >= 10) {
 			YUVQueue.poll();
 		}
 		YUVQueue.add(buffer);
 	}
-	
+
 	@SuppressLint("NewApi")
 	private boolean SupportAvcCodec(){
 		if(Build.VERSION.SDK_INT>=18){
 			for(int j = MediaCodecList.getCodecCount() - 1; j >= 0; j--){
 				MediaCodecInfo codecInfo = MediaCodecList.getCodecInfoAt(j);
-	
+
 				String[] types = codecInfo.getSupportedTypes();
 				for (int i = 0; i < types.length; i++) {
 					if (types[i].equalsIgnoreCase("video/avc")) {
@@ -179,7 +206,7 @@ public class MainActivity extends Activity  implements SurfaceHolder.Callback,Pr
 		}
 		return false;
 	}
-	
+
 
     private void startcamera(Camera mCamera){
         if(mCamera != null){

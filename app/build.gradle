@@ -38,4 +38,5 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
 
     implementation "org.java-websocket:Java-WebSocket:1.4.0"
+    implementation "com.github.Doonkey:DkFloatingView:1.1.0"
 }

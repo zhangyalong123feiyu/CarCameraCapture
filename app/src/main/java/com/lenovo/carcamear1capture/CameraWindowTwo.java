@@ -1,17 +1,16 @@
 package com.lenovo.mutimodecamera;
 
-import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
-import android.media.MediaCodecInfo;
-import android.media.MediaCodecList;
 import android.os.Build;
+import android.os.Environment;
 import android.util.Base64;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -23,14 +22,17 @@ import androidx.annotation.RequiresApi;
 import com.google.gson.Gson;
 import com.lenovo.carcontroler.utils.WebSocketUtil;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.concurrent.ArrayBlockingQueue;
 
 import okhttp3.WebSocket;
 
-public class CameraWindow implements SurfaceHolder.Callback, Camera.PreviewCallback{
-    private static final String TAG = CameraWindow.class.getSimpleName();
+public class CameraWindowTwo implements SurfaceHolder.Callback, Camera.PreviewCallback{
+    private static final String TAG = CameraWindowTwo.class.getSimpleName();
 
     private static WindowManager windowManager;
 
@@ -51,6 +53,7 @@ public class CameraWindow implements SurfaceHolder.Callback, Camera.PreviewCallb
     private SurfaceHolder surfaceHolder;
     private SurfaceView surfaceview;
     private byte[] cameraData;
+    private boolean can=true;
 
     /**
 
@@ -66,19 +69,16 @@ public class CameraWindow implements SurfaceHolder.Callback, Camera.PreviewCallb
     public void show(Context context) {
 
         if (applicationContext == null) {
-
             applicationContext = context.getApplicationContext();
 
             windowManager = (WindowManager) applicationContext
 
                     .getSystemService(Context.WINDOW_SERVICE);
 
-            View sufaceLayout = LayoutInflater.from(applicationContext).inflate(R.layout.float_layout, null);
+            View sufaceLayout = LayoutInflater.from(applicationContext).inflate(R.layout.float_layout_two, null);
             surfaceview=sufaceLayout.findViewById(R.id.floatSurface);
             surfaceHolder = surfaceview.getHolder();
             surfaceHolder.addCallback(this);
-
-//            dummyCameraView = new SurfaceView(applicationContext);
 
             WindowManager.LayoutParams params = new WindowManager.LayoutParams();
 
@@ -87,6 +87,8 @@ public class CameraWindow implements SurfaceHolder.Callback, Camera.PreviewCallb
             params.height = 100;
 
             params.alpha = 100;
+            params.gravity= Gravity.TOP;
+            params.horizontalMargin=200;
 
             params.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 
@@ -97,6 +99,7 @@ public class CameraWindow implements SurfaceHolder.Callback, Camera.PreviewCallb
                     | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
 
                     | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+
 
             windowManager.addView(sufaceLayout, params);
 
@@ -144,10 +147,6 @@ public class CameraWindow implements SurfaceHolder.Callback, Camera.PreviewCallb
 
     }
 
-    private void init(){
-
-    }
-
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
 
@@ -182,15 +181,50 @@ public class CameraWindow implements SurfaceHolder.Callback, Camera.PreviewCallb
                 image.compressToJpeg(new Rect(0, 0, size.width, size.height), 80 ,stream);
                 byte[] jpgByte = stream.toByteArray();
                 cameraData=jpgByte;
+//                if (can){
+//                    can=false;
+//                    fileToBytes(cameraData, "/storage/emulated/0/Android/data/com.lenovo.mutimodecamera/files","save.jpg");
+//                }
             }
         } catch (Exception e){
 
         }
 
     }
+    public static void fileToBytes(byte[] bytes, String filePath, String fileName) {
+        BufferedOutputStream bos = null;
+        FileOutputStream fos = null;
+        File file = null;
+        Log.e("TAG","file path is"+filePath);
+        try {
 
-    public byte[] getImageData(){
-        return cameraData;
+            file = new File(filePath + fileName);
+            if (!file.exists()){
+                //文件夹不存在 生成
+                file.mkdirs();
+            }
+            fos = new FileOutputStream(file);
+            bos = new BufferedOutputStream(fos);
+            bos.write(bytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.e("TAG","file error is ========="+e.getMessage());
+        } finally {
+            if (bos != null) {
+                try {
+                    bos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (fos != null) {
+                try {
+                    fos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     private void startcamera(Camera mCamera){
@@ -214,16 +248,18 @@ public class CameraWindow implements SurfaceHolder.Callback, Camera.PreviewCallb
         }
     }
 
+    public byte[] getImageData(){
+        return cameraData;
+    }
+
     @TargetApi(9)
     private Camera getBackCamera() {
         Camera c = null;
         try {
-            c = Camera.open(0); // attempt to get a Camera instance
+            c = Camera.open(1); // attempt to get a Camera instance
         } catch (Exception e) {
             e.printStackTrace();
         }
         return c; // returns null if camera is unavailable
     }
-
-
 }

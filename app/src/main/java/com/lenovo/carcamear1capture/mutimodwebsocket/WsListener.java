@@ -1,12 +1,10 @@
-package com.lenovo.carcamear1capture;
+package com.lenovo.carcamear1capture.mutimodwebsocket;
 
 import android.content.Context;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.google.gson.Gson;
 
-import java.util.Arrays;
 import java.util.List;
 
 import okhttp3.Response;
@@ -20,13 +18,15 @@ public class WsListener extends WebSocketListener {
     private Gson gson = new Gson();
     private List<String> foodList;
     private Context context;
+
     public WsListener(Context context) {
         this.context = context;
     }
+
     public ReceiveDataListener receiveDataListener;
 
-    public void setReceiveDataListener(ReceiveDataListener receiveDataListener){
-     this.receiveDataListener=receiveDataListener;
+    public void setReceiveDataListener(ReceiveDataListener receiveDataListener) {
+        this.receiveDataListener = receiveDataListener;
     }
 
     @Override
@@ -55,7 +55,7 @@ public class WsListener extends WebSocketListener {
     public void onMessage(WebSocket webSocket, String text) {
         super.onMessage(webSocket, text);
         Log.e(TAG, "客户端收到消息:" + text);
-        receiveDataListener.onReceiveData();
+        receiveDataListener.onReceiveData(text);
     }
 
     @Override
@@ -69,8 +69,8 @@ public class WsListener extends WebSocketListener {
         Log.e(TAG, "连接成功！");
     }
 
-    interface ReceiveDataListener{
-        void onReceiveData();
+    public interface ReceiveDataListener {
+        void onReceiveData(String msg);
     }
 
 }

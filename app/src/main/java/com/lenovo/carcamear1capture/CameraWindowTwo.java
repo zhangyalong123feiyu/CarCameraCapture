@@ -1,4 +1,4 @@
-package com.lenovo.mutimodecamera;
+package com.lenovo.carcamear1capture;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -7,8 +7,6 @@ import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.os.Build;
-import android.os.Environment;
-import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -19,17 +17,12 @@ import android.view.WindowManager;
 
 import androidx.annotation.RequiresApi;
 
-import com.google.gson.Gson;
-import com.lenovo.carcontroler.utils.WebSocketUtil;
-
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.concurrent.ArrayBlockingQueue;
-
-import okhttp3.WebSocket;
 
 public class CameraWindowTwo implements SurfaceHolder.Callback, Camera.PreviewCallback{
     private static final String TAG = CameraWindowTwo.class.getSimpleName();

@@ -1,4 +1,4 @@
-package com.lenovo.mutimodeshow.bean;
+package com.lenovo.carcamear1capture.mutimodwebsocket;
 
 import com.google.gson.annotations.SerializedName;
 

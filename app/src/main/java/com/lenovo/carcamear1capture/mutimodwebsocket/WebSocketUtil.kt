@@ -1,11 +1,10 @@
 package com.lenovo.carcontroler.utils
 
 import android.content.Context
-import com.lenovo.carcamear1capture.WsListener
+import com.lenovo.carcamear1capture.mutimodwebsocket.WsListener
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.WebSocket
-import okhttp3.WebSocketListener
 import java.util.concurrent.TimeUnit
 
 
@@ -21,7 +20,7 @@ class WebSocketUtil {
         val request: Request = Request.Builder()
             .url(mWbSocketUrl)
             .build()
-        wsListener=WsListener(context);
+        wsListener= WsListener(context);
         mWebSocket = okHttpClient.newWebSocket(request, wsListener)
         return mWebSocket
     }
@@ -30,7 +29,7 @@ class WebSocketUtil {
         return mWebSocket;
     }
 
-    fun getWebSocketListener():WsListener{
+    fun getWebSocketListener(): WsListener {
         return wsListener;
     }
 }

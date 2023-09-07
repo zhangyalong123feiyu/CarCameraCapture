@@ -1,4 +1,4 @@
-package com.lenovo.mutimodecamera;
+package com.lenovo.carcamear1capture;
 
 import com.google.gson.annotations.SerializedName;
 

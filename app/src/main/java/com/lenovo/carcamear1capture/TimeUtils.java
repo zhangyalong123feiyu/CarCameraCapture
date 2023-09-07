@@ -1,4 +1,4 @@
-package com.lenovo.mutimodeshow;
+package com.lenovo.carcamear1capture;
 
 import java.util.Calendar;
 
@@ -13,7 +13,8 @@ public class TimeUtils {
             int hour = calendar.get(Calendar.HOUR_OF_DAY);
             int minute = calendar.get(Calendar.MINUTE);
             int second = calendar.get(Calendar.SECOND);
-            return String.format("%04d-%02d-%02d %02d:%02d:%02d", year, month, day, hour, minute, second);
+            int MILLISECOND = calendar.get(Calendar.MILLISECOND);
+            return String.format("%04d-%02d-%02d %02d:%02d:%02d:%02d", year, month, day, hour, minute, second,MILLISECOND);
         } catch (Exception e) {
             e.printStackTrace();
         }

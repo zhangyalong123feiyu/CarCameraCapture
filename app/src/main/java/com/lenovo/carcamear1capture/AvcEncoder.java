@@ -39,7 +39,7 @@ public class AvcEncoder implements SocketLive.SocketCallback
 	
 	    MediaFormat mediaFormat = MediaFormat.createVideoFormat("video/avc", width, height);
 	    mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible); //MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar
-	    mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 25000);
+	    mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 50000);
 	    mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 15);
 	    mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2);
 	    try {
@@ -47,6 +47,7 @@ public class AvcEncoder implements SocketLive.SocketCallback
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			Log.e("TAG","mediaCodec error is"+mediaCodec);
 		}
 	    mediaCodec.configure(mediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
 	    mediaCodec.start();

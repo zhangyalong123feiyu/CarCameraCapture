@@ -1,16 +1,12 @@
-package com.lenovo.mutimodecamera;
+package com.lenovo.carcamear1capture;
 
-import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
-import android.media.MediaCodecInfo;
-import android.media.MediaCodecList;
 import android.os.Build;
-import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
@@ -20,14 +16,9 @@ import android.view.WindowManager;
 
 import androidx.annotation.RequiresApi;
 
-import com.google.gson.Gson;
-import com.lenovo.carcontroler.utils.WebSocketUtil;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.concurrent.ArrayBlockingQueue;
-
-import okhttp3.WebSocket;
 
 public class CameraWindow implements SurfaceHolder.Callback, Camera.PreviewCallback{
     private static final String TAG = CameraWindow.class.getSimpleName();
@@ -51,6 +42,7 @@ public class CameraWindow implements SurfaceHolder.Callback, Camera.PreviewCallb
     private SurfaceHolder surfaceHolder;
     private SurfaceView surfaceview;
     private byte[] cameraData;
+    private AvcEncoder avcCodec;
 
     /**
 
@@ -144,10 +136,6 @@ public class CameraWindow implements SurfaceHolder.Callback, Camera.PreviewCallb
 
     }
 
-    private void init(){
-
-    }
-
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
 
@@ -158,6 +146,8 @@ public class CameraWindow implements SurfaceHolder.Callback, Camera.PreviewCallb
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
         camera = getBackCamera();
         startcamera(camera);
+        avcCodec = new AvcEncoder(this.width,this.height,framerate,biterate);
+        avcCodec.StartEncoderThread();
     }
 
     @Override
@@ -173,6 +163,7 @@ public class CameraWindow implements SurfaceHolder.Callback, Camera.PreviewCallb
 
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
+
         // TODO Auto-generated method stub
         Camera.Size size = camera.getParameters().getPreviewSize();
         try{
@@ -187,6 +178,14 @@ public class CameraWindow implements SurfaceHolder.Callback, Camera.PreviewCallb
 
         }
 
+        putYUVData(data);
+    }
+
+    public void putYUVData(byte[] buffer) {
+        if (YUVQueue.size() >= 10) {
+            YUVQueue.poll();
+        }
+        YUVQueue.add(buffer);
     }
 
     public byte[] getImageData(){

@@ -1,13 +1,12 @@
 package com.lenovo.carcamear1capture;
 
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ComponentName;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.ImageFormat;
 import android.hardware.Camera;
 import android.hardware.Camera.Parameters;
 import android.media.MediaCodecInfo;
@@ -16,86 +15,77 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.util.Base64;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.View;
 import android.widget.ImageView;
 
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.dk.floatingview.FloatWindow;
+import com.google.gson.Gson;
+import com.lenovo.carcamear1capture.mutimodwebsocket.PassengerInfo;
+import com.lenovo.carcamear1capture.mutimodwebsocket.WsListener;
+import com.lenovo.carcontroler.utils.WebSocketUtil;
 
-import java.io.IOException;
 import java.util.concurrent.ArrayBlockingQueue;
 
-public class MainActivity extends Activity  implements SurfaceHolder.Callback, Camera.PreviewCallback {
+import okhttp3.WebSocket;
 
-	private SurfaceView surfaceview;
-	
+public class MainActivity extends Activity implements WsListener.ReceiveDataListener {
+
+    private SurfaceView surfaceview;
+
     private SurfaceHolder surfaceHolder;
-	
-	private Camera camera;
-	
+
+    private Camera camera;
+
     private Parameters parameters;
-    
-    int width = 1920;
-    
-    int height = 1080;
-    
-    int framerate = 15;
-    
-    int biterate = 25000;
-    
+    private CameraDataBean cameraDataInfo;
+
+    private WebSocket websocketClient;
+    private Gson gson;
     private static int yuvqueuesize = 10;
-    
-	public static ArrayBlockingQueue<byte[]> YUVQueue = new ArrayBlockingQueue<byte[]>(yuvqueuesize); 
-	
-	private AvcEncoder avcCodec;
+
+    public static ArrayBlockingQueue<byte[]> YUVQueue = new ArrayBlockingQueue<byte[]>(yuvqueuesize);
+
+    private AvcEncoder avcCodec;
     private final static int CAMERA_OK = 10001;
     private static String[] PERMISSIONS_STORAGE = {
             "android.permission.CAMERA",
-            "android.permission.WRITE_EXTERNAL_STORAGE" };
+            "android.permission.WRITE_EXTERNAL_STORAGE"};
     private ImageView imagev;
+    private CameraWindow cameraWindow;
+    private CameraWindowTwo cameraWindowTwo;
 
     @Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
         surfaceview = findViewById(R.id.surfaceview);
-//        View sufaceLayout = LayoutInflater.from(this).inflate(R.layout.float_layout, null);
-//        surfaceview=sufaceLayout.findViewById(R.id.floatSurface);
-//        imagev = findViewById(R.id.image);
-//        FloatWindow.with(getApplication())//application上下文
-//                .setLayoutId(R.layout.float_layout)//悬浮布局
-//                //.setFilter(Test1_1Activity.class)//过滤activity
-//                //.setLayoutParam()//设置悬浮布局layoutParam
-//                .build();
         requestAlertWindowPermission();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CameraWindow cameraWindow=new CameraWindow();
+            cameraWindow = new CameraWindow();
             cameraWindow.show(this);
+//            cameraWindow Two = new CameraWindowTwo();
+//            cameraWindowTwo.show(this);
         }
+        connectServer();
         SupportAvcCodec();
-//        if (Build.VERSION.SDK_INT>22) {
-//            if (!checkPermissionAllGranted(PERMISSIONS_STORAGE)){
-//                ActivityCompat.requestPermissions(MainActivity.this,
-//                        PERMISSIONS_STORAGE, CAMERA_OK);
-//            }else{
-//                init();
-//            }
-//        }else{
-//            init();
-//        }
+        moveTaskToBack(true);
+    }
 
-//        startService(new Intent(this, CameraService_.class));
-    moveTaskToBack(true);
-	}
+    private void connectServer() {
+        WebSocketUtil webSocketUtil = new WebSocketUtil();
+        webSocketUtil.init(this);
+        websocketClient = webSocketUtil.getWebSocketClient();
+        webSocketUtil.getWebSocketListener().setReceiveDataListener(this);
+        gson = new Gson();
+        cameraDataInfo = new CameraDataBean();
+    }
     private void requestAlertWindowPermission() {
         try {
-            if (!Settings.canDrawOverlays(this)){
+            if (!Settings.canDrawOverlays(this)) {
                 Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
                 intent.setData(Uri.parse("package:" + getPackageName()));
                 startActivityForResult(intent, 1001);
@@ -103,10 +93,6 @@ public class MainActivity extends Activity  implements SurfaceHolder.Callback, C
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-	private void init(){
-        surfaceHolder = surfaceview.getHolder();
-        surfaceHolder.addCallback(this);
     }
 
     private boolean checkPermissionAllGranted(String[] permissions) {
@@ -121,12 +107,11 @@ public class MainActivity extends Activity  implements SurfaceHolder.Callback, C
 
 
     @Override
-    public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         switch (requestCode) {
             case CAMERA_OK:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     //这里已经获取到了摄像头的权限，想干嘛干嘛了可以
-                    init();
                 } else {
                     showWaringDialog();
                 }
@@ -149,96 +134,46 @@ public class MainActivity extends Activity  implements SurfaceHolder.Callback, C
                 }).show();
     }
 
-    @Override
-    public void surfaceCreated(SurfaceHolder holder) {
 
+    @SuppressLint("NewApi")
+    private boolean SupportAvcCodec() {
+        if (Build.VERSION.SDK_INT >= 18) {
+            for (int j = MediaCodecList.getCodecCount() - 1; j >= 0; j--) {
+                MediaCodecInfo codecInfo = MediaCodecList.getCodecInfoAt(j);
 
-    }
-
-    @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        camera = getBackCamera();
-        startcamera(camera);
-        Log.e("TAG","preview width is ------------"+width+"height-----"+height);
-        avcCodec = new AvcEncoder(this.width,this.height,framerate,biterate);
-        avcCodec.StartEncoderThread();
-    }
-
-    @Override
-    public void surfaceDestroyed(SurfaceHolder holder) {
-        if (null != camera) {
-        	camera.setPreviewCallback(null);
-        	camera.stopPreview();
-            camera.release();
-            camera = null;
-            avcCodec.StopThread();
-        }
-    }
-
-
-	@Override
-	public void onPreviewFrame(byte[] data, Camera camera) {
-		// TODO Auto-generated method stub
-		putYUVData(data);
-	}
-
-	public void putYUVData(byte[] buffer) {
-//        ImageUtil.ConvertNV21ToBitmap(buffer,imagev);
-		if (YUVQueue.size() >= 10) {
-			YUVQueue.poll();
-		}
-		YUVQueue.add(buffer);
-	}
-
-	@SuppressLint("NewApi")
-	private boolean SupportAvcCodec(){
-		if(Build.VERSION.SDK_INT>=18){
-			for(int j = MediaCodecList.getCodecCount() - 1; j >= 0; j--){
-				MediaCodecInfo codecInfo = MediaCodecList.getCodecInfoAt(j);
-
-				String[] types = codecInfo.getSupportedTypes();
-				for (int i = 0; i < types.length; i++) {
-					if (types[i].equalsIgnoreCase("video/avc")) {
-						return true;
-					}
-				}
-			}
-		}
-		return false;
-	}
-
-
-    private void startcamera(Camera mCamera){
-        if(mCamera != null){
-            try {
-                mCamera.setPreviewCallback(this);
-                mCamera.setDisplayOrientation(90);
-                if(parameters == null){
-                    parameters = mCamera.getParameters();
+                String[] types = codecInfo.getSupportedTypes();
+                for (int i = 0; i < types.length; i++) {
+                    if (types[i].equalsIgnoreCase("video/avc")) {
+                        return true;
+                    }
                 }
-                parameters = mCamera.getParameters();
-                parameters.setPreviewFormat(ImageFormat.NV21);
-                parameters.setPreviewSize(width, height);
-                mCamera.setParameters(parameters);
-                mCamera.setPreviewDisplay(surfaceHolder);
-                mCamera.startPreview();
-
-            } catch (IOException e) {
-                e.printStackTrace();
             }
         }
+        return false;
     }
 
-    @TargetApi(9)
-	private Camera getBackCamera() {
-        Camera c = null;
-        try {
-            c = Camera.open(0); // attempt to get a Camera instance
-        } catch (Exception e) {
-            e.printStackTrace();
+
+    @Override
+    public void onReceiveData(String msg) {
+        PassengerInfo passengerInfo = gson.fromJson(msg, PassengerInfo.class);
+        Integer status = passengerInfo.getStatus();
+        if (status==6){
+            if (cameraWindow.getImageData()!=null/*&& cameraWindowTwo.getImageData()!=null*/){
+                cameraDataInfo.setIn(Base64.encodeToString(cameraWindow.getImageData(), Base64.DEFAULT));
+//            cameraDataInfo.setOut(Base64.encodeToString(cameraWindowTwo.getImageData(), Base64.DEFAULT));
+                String cameraJson = gson.toJson(cameraDataInfo);
+                //编码base64 发送数据
+                Log.e("TAG", "send camera data time iscom"+TimeUtils.getTimeFromTimestamp());
+                websocketClient.send(cameraJson);
+            }
         }
-        return c; // returns null if camera is unavailable
+            if (status==4||status==5||status==6) return;
+            Log.e("TAG","send msg to tts");
+            Intent intent = new Intent("com.lenovo.vehi_assistant.BroadcastTextReceiver");
+            intent.setComponent(new ComponentName("com.lenovo.vehi_assistant", "com.lenovo.vehi_assistant.BroadcastTextReceiver"));
+            intent.setAction("android.intent.action.VQA_TTS");
+            intent.putExtra("speakText",msg);
+            sendBroadcast(intent);
+
     }
-
-
 }
